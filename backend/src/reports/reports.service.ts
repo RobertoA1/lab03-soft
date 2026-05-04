@@ -382,7 +382,7 @@ export class ReportsService {
       const totalCostos = producciones.reduce((s, p) => s + (p.costosOperativos || 0), 0);
       const margenTotal = totalIngresos - totalCostos;
       const avgRend = producciones.length ? producciones.reduce((s, p) => s + (p.rendimientoTnHa || 0), 0) / producciones.length : 0;
-      const temporadas = [...new Set(producciones.map((p) => p.temporada))].sort();
+      const temporadas = Array.from(new Set(producciones.map((p) => p.temporada))).sort();
       const alertasResueltas = (alertas as any[]).filter((a) => a.estado === 'resuelta').length;
       const alertasPend = (alertas as any[]).filter((a) => a.estado === 'pendiente').length;
 
