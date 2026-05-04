@@ -2,19 +2,20 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
+  // In Next.js middleware, pathname is already stripped of basePath
   const { pathname } = request.nextUrl;
-  const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? '';
-  const loginPath = `${basePath}/login`;
 
-  // Allow login page and Next.js internals
-  if (pathname === loginPath || pathname.startsWith('/_next') || pathname.startsWith('/favicon')) {
+  if (pathname === '/login' || pathname.startsWith('/_next') || pathname.startsWith('/favicon')) {
     return NextResponse.next();
   }
 
   const token = request.cookies.get('agrotech-token')?.value;
 
   if (!token) {
-    return NextResponse.redirect(new URL(loginPath, request.url));
+    // Clone preserves basePath so /login becomes /lab03/login automatically
+    const loginUrl = request.nextUrl.clone();
+    loginUrl.pathname = '/login';
+    return NextResponse.redirect(loginUrl);
   }
 
   return NextResponse.next();
