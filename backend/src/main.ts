@@ -12,13 +12,18 @@ async function bootstrap() {
   console.log('[ENV] DATABASE_NAME:', process.env.DATABASE_NAME);
   const app = await NestFactory.create(AppModule, { logger: ['error', 'warn', 'log'] });
 
-  app.use(cors({ origin: 'http://localhost:3000', credentials: true }));
+  const basePath = (process.env.APP_BASE_PATH || '').replace(/\/$/, '');
+  if (basePath) app.setGlobalPrefix(basePath);
+
+  const corsOrigin = process.env.CORS_ORIGIN || 'http://localhost:3000';
+  app.use(cors({ origin: corsOrigin, credentials: true }));
 
   const trpcRouter = app.get(TrpcRouter);
   const seedService = app.get(SeedService);
 
+  const trpcPath = basePath ? `${basePath}/trpc` : '/trpc';
   app.getHttpAdapter().use(
-    '/trpc',
+    trpcPath,
     createExpressMiddleware({
       router: trpcRouter.appRouter,
       createContext: ({ req }) => ({ req }),
