@@ -1,0 +1,252 @@
+{
+  "name": "Alerta inteligente con Gemini",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 6
+            }
+          ]
+        }
+      },
+      "id": "schedule",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "http://host.docker.internal:3001/trpc/lotes.list",
+        "options": {
+          "response": { "response": { "fullResponse": false } }
+        },
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "Bearer {{ $env.BACKEND_JWT_TOKEN }}" }
+          ]
+        }
+      },
+      "id": "fetch-lotes",
+      "name": "Fetch Lotes",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [420, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "http://host.docker.internal:3001/trpc/suelo.list",
+        "options": {
+          "response": { "response": { "fullResponse": false } }
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "Bearer {{ $env.BACKEND_JWT_TOKEN }}" }
+          ]
+        }
+      },
+      "id": "fetch-suelo",
+      "name": "Fetch Suelo",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [640, 200]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "http://host.docker.internal:3001/trpc/clima.list",
+        "options": {
+          "response": { "response": { "fullResponse": false } }
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "Bearer {{ $env.BACKEND_JWT_TOKEN }}" }
+          ]
+        }
+      },
+      "id": "fetch-clima",
+      "name": "Fetch Clima",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [640, 400]
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "mergeByFields": {},
+        "combinationMode": "mergeByPosition",
+        "options": {}
+      },
+      "id": "merge-data",
+      "name": "Merge Data",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2.1,
+      "position": [860, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={{ $env.GEMINI_API_KEY }}",
+        "sendBody": true,
+        "contentType": "json",
+        "body": "={{ JSON.stringify({ contents: [{ parts: [{ text: `Eres un agrónomo experto en agricultura de precisión en Argentina. Analiza los siguientes datos de campo y genera alertas agronómicas accionables. DATOS DE LOTES: ${JSON.stringify($node['Fetch Lotes'].json.result?.data ?? [])} DATOS DE SUELO (últimos registros): ${JSON.stringify(($node['Fetch Suelo'].json.result?.data ?? []).slice(-10))} DATOS DE CLIMA (últimos 7 días): ${JSON.stringify(($node['Fetch Clima'].json.result?.data ?? []).slice(-7))} INSTRUCCIONES: - Evalúa condiciones de estrés hídrico, anomalías de suelo, riesgos climáticos y tendencias de rendimiento. - Genera entre 0 y 3 alertas relevantes. Si todo está dentro de parámetros normales, devuelve un array vacío. - Cada alerta debe ser un objeto JSON con EXACTAMENTE estos campos: tipo (string: humedad-baja|ph-acido|ph-alcalino|ola-calor|lluvia-intensa|rendimiento-bajo-pred|nutriente-deficiente|estres-hidrico), severidad (string: critica|alta|media|baja), categoria (string: hidrico|quimico|climatico|predictivo), mensaje (string: descripción concisa del problema detectado, max 120 chars), racional (string: explicación técnica de por qué se genera la alerta con datos específicos), recomendacion (string: acción concreta que el agrónomo debe tomar), confianza (number: 0.0 a 1.0), loteId (number: ID del lote afectado, usar los IDs de los datos proporcionados) - RESPONDE SOLO con un JSON array válido, sin markdown, sin explicaciones. Ejemplo: [{ \"tipo\": \"humedad-baja\", \"severidad\": \"alta\", \"categoria\": \"hidrico\", \"mensaje\": \"Humedad de suelo crítica en Lote Norte: 22%\", \"racional\": \"Lectura del 2026-05-03: humedad=22%, muy por debajo del umbral de 35% para soja.\", \"recomendacion\": \"Aplicar riego de 20mm en las próximas 24hs.\", \"confianza\": 0.91, \"loteId\": 1 }]` }] }] }) }}",
+        "options": {
+          "response": { "response": { "fullResponse": false } }
+        }
+      },
+      "id": "gemini",
+      "name": "Gemini Analizar",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1080, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse Gemini response and extract alerts array\nconst geminiResponse = $input.first().json;\nconst text = geminiResponse.candidates?.[0]?.content?.parts?.[0]?.text ?? '[]';\n\n// Clean potential markdown fences\nconst cleaned = text.replace(/```json\\n?/g, '').replace(/```\\n?/g, '').trim();\n\ntry {\n  const alertas = JSON.parse(cleaned);\n  if (!Array.isArray(alertas) || alertas.length === 0) {\n    return [{ json: { _skip: true, reason: 'No alerts generated' } }];\n  }\n  return alertas.map(a => ({\n    json: {\n      tipo: a.tipo || 'general',\n      severidad: a.severidad || 'media',\n      categoria: a.categoria || 'climatico',\n      mensaje: (a.mensaje || '').substring(0, 200),\n      racional: a.racional || '',\n      recomendacion: a.recomendacion || '',\n      confianza: typeof a.confianza === 'number' ? a.confianza : 0.8,\n      loteId: a.loteId || null,\n      fecha: new Date().toISOString().split('T')[0]\n    }\n  }));\n} catch (e) {\n  return [{ json: { _skip: true, reason: 'Parse error: ' + e.message } }];\n}"
+      },
+      "id": "parse-alertas",
+      "name": "Parse Alertas",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1300, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [],
+          "string": [
+            {
+              "value1": "={{ $json._skip }}",
+              "operation": "isEmpty"
+            }
+          ]
+        }
+      },
+      "id": "filter-valid",
+      "name": "Filter Valid",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1520, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3001/webhooks/n8n/alertas",
+        "sendBody": true,
+        "contentType": "json",
+        "body": "={{ $json }}"
+      },
+      "id": "post-alerta",
+      "name": "POST Alerta",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1740, 240]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetch Lotes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Lotes": {
+      "main": [
+        [
+          {
+            "node": "Fetch Suelo",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fetch Clima",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Suelo": {
+      "main": [
+        [
+          {
+            "node": "Merge Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Clima": {
+      "main": [
+        [
+          {
+            "node": "Merge Data",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Data": {
+      "main": [
+        [
+          {
+            "node": "Gemini Analizar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini Analizar": {
+      "main": [
+        [
+          {
+            "node": "Parse Alertas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Alertas": {
+      "main": [
+        [
+          {
+            "node": "Filter Valid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Valid": {
+      "main": [
+        [
+          {
+            "node": "POST Alerta",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    }
+  }
+}

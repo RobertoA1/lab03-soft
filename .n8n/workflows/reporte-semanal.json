@@ -1,0 +1,57 @@
+{
+  "name": "Reporte Semanal Workflow",
+  "nodes": [
+    {
+      "parameters": {},
+      "name": "Weekly Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "options": {},
+        "requestMethod": "GET",
+        "url": "http://localhost:3001/trpc/reports.operational",
+        "responseFormat": "json"
+      },
+      "name": "Fetch Operational Report",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const pdf = $input.first().json.result?.data?.json;\nreturn [{ pdf }];"
+      },
+      "name": "Extract PDF",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "fromEmail": "agrotech@example.com",
+        "toEmail": "admin@example.com",
+        "subject": "Reporte Semanal AgroTech",
+        "text": "Adjunto reporte operativo generado automáticamente."
+      },
+      "name": "Send Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [850, 300]
+    }
+  ],
+  "connections": {
+    "Weekly Trigger": {
+      "main": [[{ "node": "Fetch Operational Report", "type": "main", "index": 0 }]]
+    },
+    "Fetch Operational Report": {
+      "main": [[{ "node": "Extract PDF", "type": "main", "index": 0 }]]
+    },
+    "Extract PDF": {
+      "main": [[{ "node": "Send Email", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": { "executionOrder": "v1" }
+}

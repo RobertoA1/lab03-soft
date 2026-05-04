@@ -10,22 +10,26 @@ Ayudar al agrónomo a decidir rápido con una vista clara del rendimiento estima
 
 ## Requirements
 
-### Validated
+### Validated (v1)
 
-(None yet — ship to validate)
+- [x] **v1** Base de datos y carga manual (DATA-01): Seed/manual records para 6 entidades con validación.
+- [x] **v1** Dashboard agronómico (DASH-01, DASH-02): KPIs, gráficos históricos, filtros por lote/cultivo/temporada.
+- [x] **v1** Alertas basadas en reglas (ALRT-01): Threshold alerts con racional, recomendación y estados ack/resolve.
 
-### Active
+### Active (v1.1)
 
-- [ ] Cargar datos manuales y semillas para cultivos, lotes, clima, suelo, riego y producción.
-- [ ] Ver un dashboard interactivo con rendimiento estimado, estado hídrico y alertas tempranas.
-- [ ] Explorar históricos de clima, suelo, riego y producción con filtros por cultivo, temporada y lote.
-- [ ] Recibir alertas basadas en reglas y sugerencias predictivas con explicación suficiente para actuar.
+- [ ] **AUTH-01**: Protección de rutas frontend — redirigir a /login si no hay token JWT válido.
+- [ ] **AUTH-02**: Protección de endpoints backend tRPC — rechazar llamadas sin token JWT válido (authedProcedure).
+- [ ] **ALRT-02**: Webhook REST para n8n (`POST /webhooks/n8n/alertas`) — permitir que n8n cree alertas en el backend.
+- [ ] **ALRT-03**: Push de alertas en tiempo real al frontend — SSE endpoint o polling para actualizar badge de notificaciones sin refrescar.
+- [ ] **ML-01**: Conectar backend al servicio ML Python (FastAPI) para predicciones ensemble reales en lugar de reglas simples.
+- [ ] **ML-02**: Actualizar `ml/main.py` con ensemble learning básico (VotingRegressor scikit-learn).
 
 ### Out of Scope
 
-- Reportes PDF — se dejan para una versión posterior.
-- Integraciones con APIs externas e IoT — v1 usa carga manual y datos semilla.
-- Automatización completa con n8n — no es necesaria para validar el valor inicial.
+- Reportes PDF — existen en backend pero no son prioridad de v1.1.
+- Integraciones con APIs externas e IoT — permanece manual/seed.
+- Autonomous prescriptions — solo recomendaciones, no ejecución automática.
 
 ## Context
 

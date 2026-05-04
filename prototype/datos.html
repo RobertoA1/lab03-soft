@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AgroTech - Carga de datos</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+  <style>body { font-family: 'Inter', sans-serif; } .field label{display:block;font-size:11px;font-weight:600;color:#475569;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em} .field input,.field select{width:100%;padding:8px 10px;border:1px solid #e2e8f0;border-radius:8px;font-size:14px;background:#fff} .field input:focus,.field select:focus{outline:none;border-color:#86cb92;box-shadow:0 0 0 3px rgba(134,203,146,.18)}</style>
+</head>
+<body class="bg-[#f8fafc] text-[#1a1f2b]">
+  <div class="min-h-screen flex">
+    <aside class="w-[260px] bg-[#251f47] flex flex-col fixed h-full z-30 flex-shrink-0">
+      <div class="h-12 flex items-center gap-3 px-6 border-b border-white/10">
+        <div class="w-8 h-8 rounded-lg bg-[#86cb92] flex items-center justify-center"><iconify-icon icon="lucide:leaf" class="text-white text-lg"></iconify-icon></div>
+        <span class="text-[#f0f9f4] font-bold text-lg tracking-tight">AgroTech</span>
+      </div>
+      <nav id="sidebar-container" class="flex-1 px-4 py-6 space-y-1 overflow-y-auto"></nav>
+      <div class="p-4 border-t border-white/10">
+        <div class="flex items-center gap-3"><div class="w-9 h-9 rounded-full bg-[#404e7c] flex items-center justify-center text-[#f0f9f4] font-semibold text-sm">JD</div><div><p class="text-[#f0f9f4] text-sm font-medium">John Doe</p><p class="text-[#f0f9f4]/50 text-xs">Agronomo</p></div></div>
+      </div>
+    </aside>
+    <div class="flex-1 flex flex-col ml-[260px] min-w-0">
+      <header class="sticky top-0 z-20 bg-white border-b border-[#e2e8f0] h-14 flex items-center justify-between px-6">
+        <h1 class="text-[1.5rem] font-bold tracking-tight">Carga de datos</h1>
+        <div class="flex items-center gap-3">
+          <button id="btn-reset" class="text-sm px-3 py-1.5 rounded-lg border border-[#e2e8f0] text-[#64748b] hover:bg-[#f1f5f9]">Restaurar semilla</button>
+          <button id="header-notifications" class="relative p-2 rounded-full hover:bg-[#f1f5f9]"><iconify-icon icon="lucide:bell" class="text-[#64748b] text-xl"></iconify-icon></button>
+        </div>
+      </header>
+      <main class="flex-1 p-6 overflow-y-auto">
+        <div class="max-w-[1200px] mx-auto space-y-5">
+          <div class="bg-white rounded-xl border border-[#f1f5f9] p-2 inline-flex gap-1" id="tab-bar"></div>
+
+          <div id="form-panel" class="bg-white rounded-xl shadow-sm border border-[#f1f5f9] p-6"></div>
+
+          <div class="bg-white rounded-xl shadow-sm border border-[#f1f5f9] overflow-hidden">
+            <div class="px-5 py-4 border-b border-[#f1f5f9] flex items-center justify-between">
+              <h2 class="text-[1.125rem] font-semibold">Registros existentes</h2>
+              <span id="record-count" class="text-xs font-medium px-2 py-0.5 rounded-full bg-[#404e7c]/10 text-[#404e7c]">0</span>
+            </div>
+            <div id="records-table" class="overflow-x-auto max-h-[400px] overflow-y-auto"></div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+  <script src="js/data.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/datos.js"></script>
+  <script>document.addEventListener('DOMContentLoaded', () => { window.AgroApp.renderSidebar('datos'); window.AgroApp.updateNotificationBadge(); });</script>
+</body>
+</html>

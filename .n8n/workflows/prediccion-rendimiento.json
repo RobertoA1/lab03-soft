@@ -1,0 +1,87 @@
+{
+  "name": "Prediccion Rendimiento Workflow",
+  "nodes": [
+    {
+      "parameters": {},
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "options": {},
+        "requestMethod": "GET",
+        "url": "http://localhost:3001/trpc/suelo.list",
+        "responseFormat": "json"
+      },
+      "name": "Fetch Suelo",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "options": {},
+        "requestMethod": "GET",
+        "url": "http://localhost:3001/trpc/clima.list",
+        "responseFormat": "json"
+      },
+      "name": "Fetch Clima",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [450, 500]
+    },
+    {
+      "parameters": {
+        "jsCode": "const suelos = $input.all()[0].json.result?.data?.json || [];\nconst climas = $input.all()[1].json.result?.data?.json || [];\nconst predictions = suelos.slice(0, 3).map(s => ({\n  loteId: s.loteId,\n  action: 'predecir_rendimiento',\n  sueloPh: s.ph,\n  sueloN: s.nitrogenoDisponible,\n  sueloHum: s.humedad\n}));\nreturn predictions;"
+      },
+      "name": "Preparar Datos",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [650, 400]
+    },
+    {
+      "parameters": {
+        "options": {},
+        "requestMethod": "GET",
+        "url": "http://localhost:3001/trpc/ml.predecirRendimiento",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "loteId", "value": "={{ $json.loteId }}" },
+            { "name": "sueloPh", "value": "={{ $json.sueloPh }}" },
+            { "name": "sueloN", "value": "={{ $json.sueloN }}" },
+            { "name": "sueloHum", "value": "={{ $json.sueloHum }}" },
+            { "name": "climaTempAvg", "value": "22" },
+            { "name": "climaPrecipTotal", "value": "150" },
+            { "name": "riegoTotal", "value": "30000" }
+          ]
+        },
+        "responseFormat": "json"
+      },
+      "name": "Predict ML",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [850, 400]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [{ "node": "Fetch Suelo", "type": "main", "index": 0 }],
+        [{ "node": "Fetch Clima", "type": "main", "index": 0 }]
+      ]
+    },
+    "Fetch Suelo": {
+      "main": [[{ "node": "Preparar Datos", "type": "main", "index": 0 }]]
+    },
+    "Fetch Clima": {
+      "main": [[{ "node": "Preparar Datos", "type": "main", "index": 0 }]]
+    },
+    "Preparar Datos": {
+      "main": [[{ "node": "Predict ML", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": { "executionOrder": "v1" }
+}

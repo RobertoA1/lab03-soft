@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AgroTech - Cultivos</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+  <style>body { font-family: 'Inter', sans-serif; }</style>
+</head>
+<body class="bg-[#f8fafc] text-[#1a1f2b]">
+  <div class="min-h-screen flex">
+    <aside class="w-[260px] bg-[#251f47] flex flex-col fixed h-full z-30 flex-shrink-0">
+      <div class="h-12 flex items-center gap-3 px-6 border-b border-white/10">
+        <div class="w-8 h-8 rounded-lg bg-[#86cb92] flex items-center justify-center"><iconify-icon icon="lucide:leaf" class="text-white text-lg"></iconify-icon></div>
+        <span class="text-[#f0f9f4] font-bold text-lg tracking-tight">AgroTech</span>
+      </div>
+      <nav id="sidebar-container" class="flex-1 px-4 py-6 space-y-1 overflow-y-auto"></nav>
+      <div class="p-4 border-t border-white/10">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-9 h-9 rounded-full bg-[#404e7c] flex items-center justify-center text-[#f0f9f4] font-semibold text-sm">JD</div>
+          <div class="flex-1 min-w-0">
+            <p class="text-[#f0f9f4] text-sm font-medium truncate">John Doe</p>
+            <p class="text-[#f0f9f4]/50 text-xs truncate">Gerente de Granja</p>
+          </div>
+        </div>
+      </div>
+    </aside>
+    <div class="flex-1 flex flex-col ml-[260px] min-w-0">
+      <header class="sticky top-0 z-20 bg-white border-b border-[#e2e8f0] h-14 flex items-center justify-between px-6 flex-shrink-0">
+        <h1 class="text-[1.5rem] font-bold text-[#1a1f2b] tracking-tight">Gestion de Cultivos</h1>
+      </header>
+      <main class="flex-1 p-6 overflow-y-auto">
+        <div class="max-w-[1440px] mx-auto space-y-5">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="bg-white rounded-xl shadow-sm p-5 border border-[#f1f5f9]">
+              <p class="text-2xl font-bold text-[#1a1f2b]" id="res-total-cultivos">0</p>
+              <p class="text-xs text-[#64748b]">Cultivos activos</p>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm p-5 border border-[#f1f5f9]">
+              <p class="text-2xl font-bold text-[#1a1f2b]" id="res-total-lotes">0</p>
+              <p class="text-xs text-[#64748b]">Lotes registrados</p>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm p-5 border border-[#f1f5f9]">
+              <p class="text-2xl font-bold text-[#1a1f2b]" id="res-total-hectareas">0</p>
+              <p class="text-xs text-[#64748b]">Hectareas totales</p>
+            </div>
+          </div>
+          <div class="bg-white rounded-xl shadow-sm border border-[#f1f5f9] overflow-hidden">
+            <div class="px-5 py-4 border-b border-[#f1f5f9] flex items-center justify-between">
+              <h2 class="text-[1.125rem] font-semibold text-[#1a1f2b]">Cultivos registrados</h2>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse">
+                <thead><tr class="bg-[#404e7c]">
+                  <th class="px-3 py-2.5 text-white text-[11px] font-semibold uppercase tracking-wider">Cultivo</th>
+                  <th class="px-3 py-2.5 text-white text-[11px] font-semibold uppercase tracking-wider">Variedad</th>
+                  <th class="px-3 py-2.5 text-white text-[11px] font-semibold uppercase tracking-wider">Lote</th>
+                  <th class="px-3 py-2.5 text-white text-[11px] font-semibold uppercase tracking-wider">Area (ha)</th>
+                  <th class="px-3 py-2.5 text-white text-[11px] font-semibold uppercase tracking-wider">Temporada</th>
+                  <th class="px-3 py-2.5 text-white text-[11px] font-semibold uppercase tracking-wider">Estado</th>
+                </tr></thead>
+                <tbody id="cultivos-table-body" class="text-[0.8125rem]"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+  <script src="js/data.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/cultivos.js"></script>
+  <script>document.addEventListener('DOMContentLoaded', () => { window.AgroApp.renderSidebar('crops'); window.AgroApp.updateNotificationBadge(); });</script>
+</body>
+</html>

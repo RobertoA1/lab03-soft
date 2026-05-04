@@ -1,0 +1,72 @@
+{
+  "name": "Alerta Clima Workflow",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "1",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhookId": "schedule"
+    },
+    {
+      "parameters": {
+        "options": {},
+        "requestMethod": "GET",
+        "url": "http://localhost:3001/trpc/clima.list",
+        "responseFormat": "json"
+      },
+      "id": "2",
+      "name": "Fetch Clima",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const climas = $input.all()[0].json.result?.data?.json || [];\nconst alertas = climas.filter(c => c.tempMax > 35).map(c => ({\n  loteId: c.loteId,\n  tipo: 'ola_calor',\n  severidad: 'advertencia',\n  mensaje: `Temperatura máxima ${c.tempMax}°C detectada en lote ${c.loteId}`,\n  fecha: c.fecha\n}));\nreturn alertas;"
+      },
+      "id": "3",
+      "name": "Evaluar Alertas",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "options": {},
+        "requestMethod": "POST",
+        "url": "http://localhost:3001/trpc/alertas.evaluar",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            { "name": "loteId", "value": "={{ $json.loteId }}" }
+          ]
+        },
+        "responseFormat": "json"
+      },
+      "id": "4",
+      "name": "Create Alertas",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [850, 300]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [[{"node": "Fetch Clima", "type": "main", "index": 0}]]
+    },
+    "Fetch Clima": {
+      "main": [[{"node": "Evaluar Alertas", "type": "main", "index": 0}]]
+    },
+    "Evaluar Alertas": {
+      "main": [[{"node": "Create Alertas", "type": "main", "index": 0}]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": []
+}
