@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { LayoutDashboard, Sprout, BarChart2, Bell, PlusCircle, Leaf, FileText, LogOut } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { trpc } from '../../lib/trpc';
@@ -18,6 +18,7 @@ const navItems = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   useAlertSSE();
   const { data: pendientes = [] } = trpc.alertas.pendientes.useQuery();
   const alertCount = (pendientes as any[]).filter((a: any) => a.estado !== 'resuelta').length;
@@ -52,7 +53,7 @@ export function Sidebar() {
       </nav>
       <div className="px-5 py-3 border-t border-gray-200 space-y-2">
         <button
-          onClick={() => { localStorage.removeItem('agrotech-token'); localStorage.removeItem('agrotech-user'); document.cookie = 'agrotech-token=; path=/; max-age=0'; window.location.href = '/login'; }}
+          onClick={() => { localStorage.removeItem('agrotech-token'); localStorage.removeItem('agrotech-user'); document.cookie = 'agrotech-token=; path=/; max-age=0'; router.push('/login'); }}
           className="flex items-center gap-2 text-sm text-gray-600 hover:text-red-600 transition-colors w-full"
         >
           <LogOut className="h-4 w-4" />
