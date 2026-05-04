@@ -255,9 +255,9 @@ export class ReportsService {
     return new Promise((resolve, reject) => {
       const chunks: Buffer[] = [];
       const doc = new (PDFDocument as any)({ size: 'A4', margins: { top: 0, bottom: 0, left: M.left, right: M.right }, autoFirstPage: true });
-      doc.on('data', (chunk) => chunks.push(chunk));
+      doc.on('data', (chunk: Buffer) => chunks.push(chunk));
       doc.on('end', () => resolve(Buffer.concat(chunks)));
-      doc.on('error', (err) => reject(err));
+      doc.on('error', (err: Error) => reject(err));
       const pg = { num: 1 };
       const T = 'Reporte Operativo';
 
@@ -369,9 +369,9 @@ export class ReportsService {
     return new Promise((resolve, reject) => {
       const chunks: Buffer[] = [];
       const doc = new (PDFDocument as any)({ size: 'A4', margins: { top: 0, bottom: 0, left: M.left, right: M.right }, autoFirstPage: true });
-      doc.on('data', (chunk) => chunks.push(chunk));
+      doc.on('data', (chunk: Buffer) => chunks.push(chunk));
       doc.on('end', () => resolve(Buffer.concat(chunks)));
-      doc.on('error', (err) => reject(err));
+      doc.on('error', (err: Error) => reject(err));
       const pg = { num: 1 };
       const T = 'Reporte de Gestión';
 
