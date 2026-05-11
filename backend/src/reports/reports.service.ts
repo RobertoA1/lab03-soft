@@ -244,16 +244,18 @@ export class ReportsService {
     doc.circle(x + 4, y + 5, 4).fill(colors[sev] ?? C.gray);
   }
 
-  private async sendToWebhook(fileName: string, tipoReporte: string, buf: Buffer, filters?: any, user?: any) {
+  private async sendToWebhook(fileName: string, tipoReporte: string, buf: Buffer, filters?: any) {
     const webhookUrl = process.env.N8N_REPORTES_WEBHOOK_URL;
     if (!webhookUrl) return;
 
-    let telefono = user?.telefono;
-    if (!telefono) {
-      try {
-        const cfg = await this.notificationConfigService.get();
-        telefono = cfg.telefono || '';
-      } catch (e) { }
+    let email = '';
+    let telefono = '';
+    try {
+      const cfg = await this.notificationConfigService.get();
+      email = cfg.email || '';
+      telefono = cfg.telefono || '';
+    } catch (e) {
+      console.error('[ReportsService] No se pudo obtener la configuración de notificaciones:', e);
     }
 
     try {
@@ -266,8 +268,8 @@ export class ReportsService {
           tipoReporte,
           filtros: filters || {},
           destinatario: {
-            email: user?.email || '',
-            telefono: telefono || ''
+            email,
+            telefono
           }
         })
       });
@@ -277,7 +279,7 @@ export class ReportsService {
     }
   }
 
-  async generateOperationalReport(filters?: { loteId?: number; startDate?: string; endDate?: string }, user?: any): Promise<Buffer> {
+  async generateOperationalReport(filters?: { loteId?: number; startDate?: string; endDate?: string }): Promise<Buffer> {
     let [lotes, cultivos, climas, suelos, riegos, alertas] = await Promise.all([
       this.lotesService.findAll(),
       this.cultivosService.findAll(),
@@ -316,7 +318,7 @@ export class ReportsService {
       doc.on('data', (chunk: Buffer) => chunks.push(chunk));
       doc.on('end', () => {
         const buf = Buffer.concat(chunks);
-        this.sendToWebhook(`reporte-operativo-${new Date().toISOString().split('T')[0]}.pdf`, 'operativo', buf, filters, user);
+        this.sendToWebhook(`reporte-operativo-${new Date().toISOString().split('T')[0]}.pdf`, 'operativo', buf, filters);
         resolve(buf);
       });
       doc.on('error', (err: Error) => reject(err));
@@ -418,7 +420,7 @@ export class ReportsService {
     });
   }
 
-  async generateManagementReport(filters?: { loteId?: number; startDate?: string; endDate?: string }, user?: any): Promise<Buffer> {
+  async generateManagementReport(filters?: { loteId?: number; startDate?: string; endDate?: string }): Promise<Buffer> {
     let [lotes, producciones, alertas, climas, suelos, riegos] = await Promise.all([
       this.lotesService.findAll(),
       this.produccionService.findAll(),
@@ -455,7 +457,7 @@ export class ReportsService {
       doc.on('data', (chunk: Buffer) => chunks.push(chunk));
       doc.on('end', () => {
         const buf = Buffer.concat(chunks);
-        this.sendToWebhook(`reporte-gestion-${new Date().toISOString().split('T')[0]}.pdf`, 'gestion', buf, filters, user);
+        this.sendToWebhook(`reporte-gestion-${new Date().toISOString().split('T')[0]}.pdf`, 'gestion', buf, filters);
         resolve(buf);
       });
       doc.on('error', (err: Error) => reject(err));
