@@ -25,13 +25,21 @@ export default function ReportesPage() {
   const [loadingOp, setLoadingOp] = useState(false);
   const [loadingMgmt, setLoadingMgmt] = useState(false);
   const [error, setError] = useState('');
+  const [loteId, setLoteId] = useState<number | null>(null);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const utils = trpc.useUtils();
+  const { data: lotes = [] } = trpc.lotes.list.useQuery();
 
   const handleDownloadOp = async () => {
     setLoadingOp(true);
     setError('');
     try {
-      const data = await utils.reports.operational.fetch();
+      const data = await utils.reports.operational.fetch({
+        loteId: loteId ?? undefined,
+        startDate: startDate || undefined,
+        endDate: endDate || undefined,
+      });
       if (data) downloadBase64PDF(data, `reporte-operativo-${new Date().toISOString().split('T')[0]}.pdf`);
     } catch (e: any) {
       setError(e.message ?? 'Error al generar reporte operativo');
@@ -43,7 +51,11 @@ export default function ReportesPage() {
     setLoadingMgmt(true);
     setError('');
     try {
-      const data = await utils.reports.management.fetch();
+      const data = await utils.reports.management.fetch({
+        loteId: loteId ?? undefined,
+        startDate: startDate || undefined,
+        endDate: endDate || undefined,
+      });
       if (data) downloadBase64PDF(data, `reporte-gestion-${new Date().toISOString().split('T')[0]}.pdf`);
     } catch (e: any) {
       setError(e.message ?? 'Error al generar reporte de gestión');
@@ -54,6 +66,41 @@ export default function ReportesPage() {
   return (
     <div className="p-6">
       <h1 className="mb-6 text-2xl font-bold text-slate-800">Reportes PDF</h1>
+
+      <div className="mb-6 flex flex-wrap gap-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+        <div>
+          <label className="block text-xs font-semibold text-slate-600 mb-1">Lote</label>
+          <select
+            value={loteId ?? ''}
+            onChange={(e) => setLoteId(e.target.value ? Number(e.target.value) : null)}
+            className="text-sm border border-slate-200 rounded px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          >
+            <option value="">Todos los lotes</option>
+            {(lotes as any[]).map((l) => (
+              <option key={l.id} value={l.id}>{l.nombre}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-xs font-semibold text-slate-600 mb-1">Fecha Desde</label>
+          <input
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            className="text-sm border border-slate-200 rounded px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-semibold text-slate-600 mb-1">Fecha Hasta</label>
+          <input
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            className="text-sm border border-slate-200 rounded px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+          />
+        </div>
+      </div>
+
       <div className="grid gap-4 md:grid-cols-2">
         <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
           <h2 className="mb-2 text-lg font-semibold text-slate-700">Reporte Operativo</h2>

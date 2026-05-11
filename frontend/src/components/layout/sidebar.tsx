@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, Sprout, BarChart2, Bell, PlusCircle, Leaf, FileText, LogOut } from 'lucide-react';
+import { LayoutDashboard, Sprout, BarChart2, Bell, PlusCircle, Leaf, FileText, LogOut, Cpu, Settings } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { trpc } from '../../lib/trpc';
 import { useAlertSSE } from '../../hooks/use-alert-sse';
@@ -14,6 +14,8 @@ const navItems = [
   { href: '/alertas', label: 'Alertas', icon: Bell, badge: true as const },
   { href: '/datos', label: 'Cargar Datos', icon: PlusCircle },
   { href: '/reportes', label: 'Reportes', icon: FileText },
+  { href: '/admin/sensores', label: 'Sensores', icon: Cpu },
+  { href: '/configuracion', label: 'Configuración', icon: Settings },
 ];
 
 export function Sidebar() {

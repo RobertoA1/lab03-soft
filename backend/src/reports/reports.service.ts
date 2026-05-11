@@ -242,8 +242,29 @@ export class ReportsService {
     doc.circle(x + 4, y + 5, 4).fill(colors[sev] ?? C.gray);
   }
 
-  async generateOperationalReport(): Promise<Buffer> {
-    const [lotes, cultivos, climas, suelos, riegos, alertas] = await Promise.all([
+  private async sendToWebhook(fileName: string, tipoReporte: string, buf: Buffer, filters?: any) {
+    const webhookUrl = process.env.N8N_REPORTES_WEBHOOK_URL;
+    if (!webhookUrl) return;
+
+    try {
+      await fetch(webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fileName,
+          pdfBase64: buf.toString('base64'),
+          tipoReporte,
+          filtros: filters || {}
+        })
+      });
+      console.log(`[ReportsService] Sent ${tipoReporte} report to n8n`);
+    } catch (e) {
+      console.error(`[ReportsService] Error sending to n8n:`, e);
+    }
+  }
+
+  async generateOperationalReport(filters?: { loteId?: number; startDate?: string; endDate?: string }): Promise<Buffer> {
+    let [lotes, cultivos, climas, suelos, riegos, alertas] = await Promise.all([
       this.lotesService.findAll(),
       this.cultivosService.findAll(),
       this.climaService.findAll(),
@@ -252,11 +273,38 @@ export class ReportsService {
       this.alertasService.findPendientes(),
     ]);
 
+    if (filters?.loteId) {
+      lotes = lotes.filter(l => l.id === filters.loteId);
+      cultivos = cultivos.filter(c => c.loteId === filters.loteId);
+      climas = climas.filter(c => c.loteId === filters.loteId);
+      suelos = suelos.filter(s => s.loteId === filters.loteId);
+      riegos = riegos.filter(r => r.loteId === filters.loteId);
+      alertas = alertas.filter((a: any) => a.loteId === filters.loteId);
+    }
+    if (filters?.startDate) {
+      climas = climas.filter(c => c.fecha && c.fecha >= filters.startDate!);
+      suelos = suelos.filter(s => s.fecha && s.fecha >= filters.startDate!);
+      riegos = riegos.filter(r => r.fecha && r.fecha >= filters.startDate!);
+      alertas = alertas.filter((a: any) => a.fecha && a.fecha >= filters.startDate!);
+      cultivos = cultivos.filter(c => c.fechaSiembra && c.fechaSiembra >= filters.startDate!);
+    }
+    if (filters?.endDate) {
+      climas = climas.filter(c => c.fecha && c.fecha <= filters.endDate!);
+      suelos = suelos.filter(s => s.fecha && s.fecha <= filters.endDate!);
+      riegos = riegos.filter(r => r.fecha && r.fecha <= filters.endDate!);
+      alertas = alertas.filter((a: any) => a.fecha && a.fecha <= filters.endDate!);
+      cultivos = cultivos.filter(c => c.fechaSiembra && c.fechaSiembra <= filters.endDate!);
+    }
+
     return new Promise((resolve, reject) => {
       const chunks: Buffer[] = [];
       const doc = new (PDFDocument as any)({ size: 'A4', margins: { top: 0, bottom: 0, left: M.left, right: M.right }, autoFirstPage: true });
       doc.on('data', (chunk: Buffer) => chunks.push(chunk));
-      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('end', () => {
+        const buf = Buffer.concat(chunks);
+        this.sendToWebhook(`reporte-operativo-${new Date().toISOString().split('T')[0]}.pdf`, 'operativo', buf, filters);
+        resolve(buf);
+      });
       doc.on('error', (err: Error) => reject(err));
       const pg = { num: 1 };
       const T = 'Reporte Operativo';
@@ -356,8 +404,8 @@ export class ReportsService {
     });
   }
 
-  async generateManagementReport(): Promise<Buffer> {
-    const [lotes, producciones, alertas, climas, suelos, riegos] = await Promise.all([
+  async generateManagementReport(filters?: { loteId?: number; startDate?: string; endDate?: string }): Promise<Buffer> {
+    let [lotes, producciones, alertas, climas, suelos, riegos] = await Promise.all([
       this.lotesService.findAll(),
       this.produccionService.findAll(),
       this.alertasService.findAll(),
@@ -366,11 +414,36 @@ export class ReportsService {
       this.riegoService.findAll(),
     ]);
 
+    if (filters?.loteId) {
+      lotes = lotes.filter(l => l.id === filters.loteId);
+      producciones = producciones.filter(p => p.loteId === filters.loteId);
+      alertas = (alertas as any[]).filter(a => a.loteId === filters.loteId);
+      climas = climas.filter(c => c.loteId === filters.loteId);
+      suelos = suelos.filter(s => s.loteId === filters.loteId);
+      riegos = riegos.filter(r => r.loteId === filters.loteId);
+    }
+    if (filters?.startDate) {
+      climas = climas.filter(c => c.fecha && c.fecha >= filters.startDate!);
+      suelos = suelos.filter(s => s.fecha && s.fecha >= filters.startDate!);
+      riegos = riegos.filter(r => r.fecha && r.fecha >= filters.startDate!);
+      alertas = (alertas as any[]).filter(a => a.fecha && a.fecha >= filters.startDate!);
+    }
+    if (filters?.endDate) {
+      climas = climas.filter(c => c.fecha && c.fecha <= filters.endDate!);
+      suelos = suelos.filter(s => s.fecha && s.fecha <= filters.endDate!);
+      riegos = riegos.filter(r => r.fecha && r.fecha <= filters.endDate!);
+      alertas = (alertas as any[]).filter(a => a.fecha && a.fecha <= filters.endDate!);
+    }
+
     return new Promise((resolve, reject) => {
       const chunks: Buffer[] = [];
       const doc = new (PDFDocument as any)({ size: 'A4', margins: { top: 0, bottom: 0, left: M.left, right: M.right }, autoFirstPage: true });
       doc.on('data', (chunk: Buffer) => chunks.push(chunk));
-      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('end', () => {
+        const buf = Buffer.concat(chunks);
+        this.sendToWebhook(`reporte-gestion-${new Date().toISOString().split('T')[0]}.pdf`, 'gestion', buf, filters);
+        resolve(buf);
+      });
       doc.on('error', (err: Error) => reject(err));
       const pg = { num: 1 };
       const T = 'Reporte de Gestión';

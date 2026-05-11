@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { z } from 'zod';
-import { router, publicProcedure, authedProcedure } from './trpc';
+import { router, publicProcedure, authedProcedure, adminProcedure } from './trpc';
 import { LotesService } from '../lotes/lotes.service';
 import { CultivosService } from '../cultivos/cultivos.service';
 import { ClimaService } from '../clima/clima.service';
@@ -12,6 +12,8 @@ import { ReglasService } from '../alertas/reglas.service';
 import { AuthService } from '../auth/auth.service';
 import { ReportsService } from '../reports/reports.service';
 import { MlService } from '../ml/ml.service';
+import { SensoresService } from '../sensores/sensores.service';
+import { NotificationConfigService } from '../notification-config/notification-config.service';
 
 @Injectable()
 export class TrpcRouter {
@@ -27,6 +29,8 @@ export class TrpcRouter {
     private authService: AuthService,
     private reportsService: ReportsService,
     private mlService: MlService,
+    private sensoresService: SensoresService,
+    private notificationConfigService: NotificationConfigService,
   ) {}
 
   get appRouter() {
@@ -144,14 +148,74 @@ export class TrpcRouter {
       }),
 
       reports: router({
-        operational: authedProcedure.query(async () => {
-          const buf = await this.reportsService.generateOperationalReport();
-          return buf.toString('base64');
-        }),
-        management: authedProcedure.query(async () => {
-          const buf = await this.reportsService.generateManagementReport();
-          return buf.toString('base64');
-        }),
+        operational: authedProcedure
+          .input(z.object({ loteId: z.number().optional(), startDate: z.string().optional(), endDate: z.string().optional() }).optional())
+          .query(async ({ input }) => {
+            const buf = await this.reportsService.generateOperationalReport(input);
+            return buf.toString('base64');
+          }),
+        management: authedProcedure
+          .input(z.object({ loteId: z.number().optional(), startDate: z.string().optional(), endDate: z.string().optional() }).optional())
+          .query(async ({ input }) => {
+            const buf = await this.reportsService.generateManagementReport(input);
+            return buf.toString('base64');
+          }),
+      }),
+
+      sensores: router({
+        list: adminProcedure.query(() => this.sensoresService.findAll()),
+        get: adminProcedure
+          .input(z.object({ id: z.number() }))
+          .query(({ input }) => this.sensoresService.findOne(input.id)),
+        create: adminProcedure
+          .input(z.object({
+            loteId: z.number(),
+            tipo: z.enum(['clima', 'suelo', 'riego']),
+            fabricante: z.string().min(1),
+            modelo: z.string().min(1),
+            numeroSerie: z.string().min(1),
+            firmware: z.string().optional(),
+            fechaInstalacion: z.string().optional(),
+            activo: z.boolean().optional(),
+          }))
+          .mutation(({ input }) => this.sensoresService.create(input as any)),
+        update: adminProcedure
+          .input(z.object({
+            id: z.number(),
+            fabricante: z.string().optional(),
+            modelo: z.string().optional(),
+            numeroSerie: z.string().optional(),
+            firmware: z.string().optional(),
+            fechaInstalacion: z.string().optional(),
+            activo: z.boolean().optional(),
+          }))
+          .mutation(({ input }) => { const { id, ...data } = input; return this.sensoresService.update(id, data); }),
+        remove: adminProcedure
+          .input(z.object({ id: z.number() }))
+          .mutation(({ input }) => this.sensoresService.remove(input.id)),
+        regenerateToken: adminProcedure
+          .input(z.object({ id: z.number(), adminEmail: z.string(), adminPassword: z.string() }))
+          .mutation(async ({ input }) => {
+            // Reusamos validación de password antes de regenerar
+            await this.sensoresService.revealToken(input.id, input.adminEmail, input.adminPassword);
+            return this.sensoresService.regenerateToken(input.id);
+          }),
+        revealToken: adminProcedure
+          .input(z.object({ id: z.number(), adminEmail: z.string(), adminPassword: z.string() }))
+          .mutation(({ input }) => this.sensoresService.revealToken(input.id, input.adminEmail, input.adminPassword)),
+      }),
+
+      notificacionesConfig: router({
+        get: authedProcedure.query(() => this.notificationConfigService.get()),
+        save: authedProcedure
+          .input(z.object({
+            email: z.string().email().nullable().or(z.literal('')),
+            telefono: z.string().nullable().or(z.literal('')),
+          }))
+          .mutation(({ input }) => this.notificationConfigService.save({
+            email: input.email ? input.email : null,
+            telefono: input.telefono ? input.telefono : null,
+          })),
       }),
 
       dashboard: router({

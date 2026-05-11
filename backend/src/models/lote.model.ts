@@ -3,6 +3,7 @@ import type { Cultivo } from './cultivo.model';
 import type { Clima } from './clima.model';
 import type { Suelo } from './suelo.model';
 import type { Riego } from './riego.model';
+import type { Sensor } from './sensor.model';
 
 @Table({ tableName: 'lotes', timestamps: true, underscored: true })
 export class Lote extends Model {
@@ -34,4 +35,7 @@ export class Lote extends Model {
 
   @HasMany(() => require('./riego.model').Riego)
   riegos: Riego[];
+
+  @HasMany(() => require('./sensor.model').Sensor)
+  sensores: Sensor[];
 }

@@ -33,6 +33,20 @@ services:
       DB_POSTGRESDB_USER: agrotech
       DB_POSTGRESDB_PASSWORD: agrotech_pass
       WEBHOOK_URL: http://localhost:5678
+      # --- Variables usadas por workflows de alertas (ajustar antes de activar) ---
+      # Gemini
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      # JWT emitido por el backend para que n8n consulte tRPC protegido
+      BACKEND_JWT_TOKEN: ${BACKEND_JWT_TOKEN:-}
+      # EmailJS (https://dashboard.emailjs.com) -- usado por "Send Email"
+      EMAILJS_SERVICE_ID: ${EMAILJS_SERVICE_ID:-}
+      EMAILJS_TEMPLATE_ID: ${EMAILJS_TEMPLATE_ID:-}
+      EMAILJS_PUBLIC_KEY: ${EMAILJS_PUBLIC_KEY:-}
+      EMAILJS_PRIVATE_KEY: ${EMAILJS_PRIVATE_KEY:-}
+      # Evolution API (WhatsApp) -- usado por "Send WhatsApp"
+      EVOLUTION_API_URL: ${EVOLUTION_API_URL:-}
+      EVOLUTION_INSTANCE: ${EVOLUTION_INSTANCE:-}
+      EVOLUTION_API_KEY: ${EVOLUTION_API_KEY:-}
     ports:
       - '5678:5678'
     depends_on:
@@ -40,19 +54,6 @@ services:
         condition: service_healthy
     volumes:
       - n8n_data:/home/node/.n8n
-
-  ml:
-    build:
-      context: ./ml
-      dockerfile: Dockerfile
-    container_name: agrotech_ml
-    ports:
-      - '8000:8000'
-    environment:
-      DATABASE_URL: postgresql://agrotech:agrotech_pass@postgres:5432/agrotech
-    depends_on:
-      postgres:
-        condition: service_healthy
 
 volumes:
   postgres_data:

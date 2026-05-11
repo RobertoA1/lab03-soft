@@ -7,6 +7,8 @@ import { Suelo } from './models/suelo.model';
 import { Riego } from './models/riego.model';
 import { Produccion } from './models/produccion.model';
 import { Alerta } from './models/alerta.model';
+import { Sensor } from './models/sensor.model';
+import { NotificationConfig } from './models/notification-config.model';
 import { CultivosModule } from './cultivos/cultivos.module';
 import { LotesModule } from './lotes/lotes.module';
 import { ClimaModule } from './clima/clima.module';
@@ -20,6 +22,8 @@ import { AuthModule } from './auth/auth.module';
 import { ReportsModule } from './reports/reports.module';
 import { MlModule } from './ml/ml.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
+import { SensoresModule } from './sensores/sensores.module';
+import { NotificationConfigModule } from './notification-config/notification-config.module';
 import { Dialect } from 'sequelize';
 
 @Module({
@@ -32,7 +36,7 @@ import { Dialect } from 'sequelize';
       username: process.env.DATABASE_USER,
       password: process.env.DATABASE_PASSWORD,
       storage: process.env.DATABASE_STORAGE || './agrotech.sqlite',
-      models: [Cultivo, Lote, Clima, Suelo, Riego, Produccion, Alerta],
+      models: [Cultivo, Lote, Clima, Suelo, Riego, Produccion, Alerta, Sensor, NotificationConfig],
       autoLoadModels: true,
       synchronize: true,
       logging: process.env.NODE_ENV === 'development' ? console.log : false,
@@ -50,6 +54,8 @@ import { Dialect } from 'sequelize';
     ReportsModule,
     MlModule,
     WebhooksModule,
+    SensoresModule,
+    NotificationConfigModule,
   ],
 })
 export class AppModule {}

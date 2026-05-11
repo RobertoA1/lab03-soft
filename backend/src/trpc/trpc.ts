@@ -24,3 +24,9 @@ export const authedProcedure = t.procedure.use(async (opts) => {
     throw new Error('Token inválido');
   }
 });
+
+export const adminProcedure = authedProcedure.use(async (opts) => {
+  const user = (opts.ctx as any).user;
+  if (user?.role !== 'admin') throw new Error('Solo administradores');
+  return opts.next({ ctx: opts.ctx });
+});

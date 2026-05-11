@@ -1,5 +1,5 @@
 {
-  "name": "Alerta inteligente con Gemini",
+  "name": "Alerta inteligente con Gemini + Notificaciones",
   "nodes": [
     {
       "parameters": {
@@ -141,16 +141,123 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "http://host.docker.internal:3001/webhooks/n8n/alertas",
+        "url": "https://lab03.robertoqr.dev/webhooks/n8n/alertas",
         "sendBody": true,
         "contentType": "json",
-        "body": "={{ $json }}"
+        "body": "={{ $json }}",
+        "options": {
+          "response": { "response": { "fullResponse": false, "neverError": true } }
+        }
       },
       "id": "post-alerta",
       "name": "POST Alerta",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.1,
-      "position": [1740, 240]
+      "position": [1740, 300],
+      "notes": "Respuesta: { received, alertaId, email, telefono, data } -- data contiene el payload original de la alerta."
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "email-not-empty",
+              "leftValue": "={{ $json.email }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-email",
+      "name": "IF Email Configured",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [1960, 220]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "telefono-not-empty",
+              "leftValue": "={{ $json.telefono }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-telefono",
+      "name": "IF Teléfono Configurado",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [1960, 400]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.emailjs.com/api/v1.0/email/send",
+        "sendBody": true,
+        "contentType": "json",
+        "body": "={{ JSON.stringify({ service_id: $env.EMAILJS_SERVICE_ID, template_id: $env.EMAILJS_TEMPLATE_ID, user_id: $env.EMAILJS_PUBLIC_KEY, accessToken: $env.EMAILJS_PRIVATE_KEY, template_params: { to_email: $json.email, alerta_tipo: $json.data.tipo, alerta_severidad: $json.data.severidad, alerta_categoria: $json.data.categoria, alerta_mensaje: $json.data.mensaje, alerta_racional: $json.data.racional, alerta_recomendacion: $json.data.recomendacion, alerta_confianza: $json.data.confianza, alerta_lote_id: $json.data.loteId, alerta_fecha: $json.data.fecha } }) }}",
+        "options": {
+          "response": { "response": { "fullResponse": false, "neverError": true } }
+        }
+      },
+      "id": "send-email",
+      "name": "Send Email (EmailJS)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [2200, 200],
+      "notes": "EmailJS requiere service_id, template_id, user_id (public key), accessToken (private key) como env vars"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EVOLUTION_API_URL }}/message/sendText/{{ $env.EVOLUTION_INSTANCE }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.EVOLUTION_API_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "json",
+        "body": "={{ JSON.stringify({ number: $json.telefono, text: `🚨 *Alerta AgroTech*\\n\\n*Tipo:* ${$('Filter Valid').item.json.tipo}\\n*Severidad:* ${String($('Filter Valid').item.json.severidad).toUpperCase()}\\n*Categoría:* ${$('Filter Valid').item.json.categoria}\\n*Lote:* ${$('Filter Valid').item.json.loteId ?? 'N/A'}\\n*Fecha:* ${$('Filter Valid').item.json.fecha}\\n\\n*Mensaje:* ${$('Filter Valid').item.json.mensaje}\\n\\n*Recomendación:* ${$('Filter Valid').item.json.recomendacion}\\n\\n_Confianza: ${($('Filter Valid').item.json.confianza * 100).toFixed(0)}%_` }) }}",
+        "options": {
+          "response": { "response": { "fullResponse": false, "neverError": true } }
+        }
+      },
+      "id": "send-whatsapp",
+      "name": "Send WhatsApp (Evolution API)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [2200, 400],
+      "notes": "Evolution API env vars: EVOLUTION_API_URL, EVOLUTION_INSTANCE, EVOLUTION_API_KEY"
     }
   ],
   "connections": {
@@ -241,6 +348,46 @@
         [
           {
             "node": "POST Alerta",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "POST Alerta": {
+      "main": [
+        [
+          {
+            "node": "IF Email Configured",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "IF Teléfono Configurado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Email Configured": {
+      "main": [
+        [
+          {
+            "node": "Send Email (EmailJS)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "IF Teléfono Configurado": {
+      "main": [
+        [
+          {
+            "node": "Send WhatsApp (Evolution API)",
             "type": "main",
             "index": 0
           }

@@ -10,9 +10,11 @@ import { AlertasModule } from '../alertas/alertas.module';
 import { AuthModule } from '../auth/auth.module';
 import { ReportsModule } from '../reports/reports.module';
 import { MlModule } from '../ml/ml.module';
+import { SensoresModule } from '../sensores/sensores.module';
+import { NotificationConfigModule } from '../notification-config/notification-config.module';
 
 @Module({
-  imports: [LotesModule, CultivosModule, ClimaModule, SueloModule, RiegoModule, ProduccionModule, AlertasModule, AuthModule, ReportsModule, MlModule],
+  imports: [LotesModule, CultivosModule, ClimaModule, SueloModule, RiegoModule, ProduccionModule, AlertasModule, AuthModule, ReportsModule, MlModule, SensoresModule, NotificationConfigModule],
   providers: [TrpcRouter],
   exports: [TrpcRouter],
 })

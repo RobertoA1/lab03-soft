@@ -23,6 +23,8 @@ export default function HistoricoPage() {
   const [loteId, setLoteId] = useState<number | null>(null);
   const [cultivo, setCultivo] = useState<string>('');
   const [temporada, setTemporada] = useState<string>('');
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
 
   const { data: lotes = [] } = trpc.lotes.list.useQuery();
   const { data: producciones = [] } = trpc.produccion.list.useQuery();
@@ -64,9 +66,26 @@ export default function HistoricoPage() {
     return list;
   }, [producciones, loteId, cultivo, temporada, cultivos]);
 
-  const filteredClima = useMemo(() => (climas as any[]).filter((c) => matchingLoteIds.has(c.loteId)), [climas, matchingLoteIds]);
-  const filteredSuelo = useMemo(() => (suelos as any[]).filter((s) => matchingLoteIds.has(s.loteId)), [suelos, matchingLoteIds]);
-  const filteredRiego = useMemo(() => (riegos as any[]).filter((r) => matchingLoteIds.has(r.loteId)), [riegos, matchingLoteIds]);
+  const filteredClima = useMemo(() => (climas as any[]).filter((c) => {
+    if (!matchingLoteIds.has(c.loteId)) return false;
+    if (startDate && c.fecha < startDate) return false;
+    if (endDate && c.fecha > endDate) return false;
+    return true;
+  }), [climas, matchingLoteIds, startDate, endDate]);
+
+  const filteredSuelo = useMemo(() => (suelos as any[]).filter((s) => {
+    if (!matchingLoteIds.has(s.loteId)) return false;
+    if (startDate && s.fecha < startDate) return false;
+    if (endDate && s.fecha > endDate) return false;
+    return true;
+  }), [suelos, matchingLoteIds, startDate, endDate]);
+
+  const filteredRiego = useMemo(() => (riegos as any[]).filter((r) => {
+    if (!matchingLoteIds.has(r.loteId)) return false;
+    if (startDate && r.fecha < startDate) return false;
+    if (endDate && r.fecha > endDate) return false;
+    return true;
+  }), [riegos, matchingLoteIds, startDate, endDate]);
 
   const prodData = [...filteredProd]
     .sort((a, b) => a.temporada.localeCompare(b.temporada))
@@ -125,6 +144,20 @@ export default function HistoricoPage() {
             <option value="">Todas las temporadas</option>
             {allTemporadas.map((t) => (<option key={t} value={t}>{t}</option>))}
           </select>
+          <input
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-400"
+            title="Fecha Desde"
+          />
+          <input
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-400"
+            title="Fecha Hasta"
+          />
         </div>
       </div>
 
