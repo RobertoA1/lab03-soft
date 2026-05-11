@@ -150,14 +150,16 @@ export class TrpcRouter {
       reports: router({
         operational: authedProcedure
           .input(z.object({ loteId: z.number().optional(), startDate: z.string().optional(), endDate: z.string().optional() }).optional())
-          .query(async ({ input }) => {
-            const buf = await this.reportsService.generateOperationalReport(input);
+          .query(async ({ input, ctx }) => {
+            const user = (ctx as any).user;
+            const buf = await this.reportsService.generateOperationalReport(input, user);
             return buf.toString('base64');
           }),
         management: authedProcedure
           .input(z.object({ loteId: z.number().optional(), startDate: z.string().optional(), endDate: z.string().optional() }).optional())
-          .query(async ({ input }) => {
-            const buf = await this.reportsService.generateManagementReport(input);
+          .query(async ({ input, ctx }) => {
+            const user = (ctx as any).user;
+            const buf = await this.reportsService.generateManagementReport(input, user);
             return buf.toString('base64');
           }),
       }),

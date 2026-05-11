@@ -7,9 +7,10 @@ import { SueloModule } from '../suelo/suelo.module';
 import { RiegoModule } from '../riego/riego.module';
 import { ProduccionModule } from '../produccion/produccion.module';
 import { AlertasModule } from '../alertas/alertas.module';
+import { NotificationConfigModule } from '../notification-config/notification-config.module';
 
 @Module({
-  imports: [LotesModule, CultivosModule, ClimaModule, SueloModule, RiegoModule, ProduccionModule, AlertasModule],
+  imports: [LotesModule, CultivosModule, ClimaModule, SueloModule, RiegoModule, ProduccionModule, AlertasModule, NotificationConfigModule],
   providers: [ReportsService],
   exports: [ReportsService],
 })
